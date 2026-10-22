@@ -91,7 +91,7 @@ grant select on public.axiom_user_progress to authenticated;
 grant select, insert, update, delete on public.axiom_personal_calendar to authenticated;
 grant select, insert, delete on public.axiom_team_resources to authenticated;
 
-revoke all on public.axiom_user_progress from anon, authenticated;
+revoke insert, update, delete on public.axiom_user_progress from anon, authenticated;
 revoke insert, update, delete on public.axiom_lesson_results from anon, authenticated;
 
 create or replace function public.record_axiom_lesson_result(
