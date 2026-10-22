@@ -4,8 +4,10 @@ compatibility_date = "2026-10-21"
 
 [vars]
 SUPABASE_URL = "https://isjqrodbqmazcdczjwxm.supabase.co"
-SUPABASE_ANON_KEY = "REPLACE_WITH_SUPABASE_PUBLISHABLE_OR_ANON_KEY"
+SUPABASE_ANON_KEY = "sb_publishable_-MiwDBCIAEXEee45Q8Z4lg_GTZdTeg6"
 ALLOWED_ORIGINS = "https://REPLACE_WITH_YOUR_AXIOM_FRONTEND_HOST"
 AI_MODEL = "gpt-4o-mini"
-# Set AI_API_KEY with: npx wrangler secret put AI_API_KEY
+# Set these secrets interactively; never add them to this file:
+# npx wrangler secret put AI_API_KEY
+# npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 # Optional: npx wrangler secret put AI_BASE_URL
