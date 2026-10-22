@@ -169,12 +169,20 @@ export default {
     if (request.method === "OPTIONS") return new Response(null,{status:204,headers:cors});
     const url = new URL(request.url);
     if (url.pathname === "/health" && request.method === "GET") return json({ok:true,service:"axiom-agent-api"},200,cors);
-    if (url.pathname !== "/api/agent") return json({error:"Not found."},404,cors);
-    if (request.method !== "POST") return json({error:"Method not allowed."},405,{...Object.fromEntries(cors)});
-    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.AI_API_KEY || !env.ALLOWED_ORIGINS) return json({error:"Worker configuration incomplete."},503,cors);
+    if (!["/api/agent","/api/questions","/api/grade"].includes(url.pathname)) return json({error:"Not found."},404,cors);
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.ALLOWED_ORIGINS) return json({error:"Worker configuration incomplete."},503,cors);
     const user = await getUser(request,env);
     if (!user) return json({error:"Authentication required."},401,cors);
-    try { const r = await agent(request,env,user); const h = new Headers(r.headers); cors.forEach((v,k)=>h.set(k,v)); return new Response(r.body,{status:r.status,headers:h}); }
-    catch { return json({error:"Agent request failed safely."},500,cors); }
+    try {
+      let r:Response;
+      if(url.pathname==="/api/questions") r=await handleQuestions(request,env);
+      else if(url.pathname==="/api/grade") r=await handleGrade(request,env,user);
+      else {
+        if(!env.AI_API_KEY) return json({error:"Agent API key is not configured."},503,cors);
+        if(request.method!=="POST") return json({error:"Method not allowed."},405,cors);
+        r=await agent(request,env,user);
+      }
+      const h=new Headers(r.headers);cors.forEach((v,k)=>h.set(k,v));return new Response(r.body,{status:r.status,headers:h});
+    } catch { return json({error:"Request failed safely."},500,cors); }
   }
 };
