@@ -1,72 +1,79 @@
 # Axiom deployment guide
 
-## Current limits you must know
+This repository branch contains a new Axiom web app shell, Supabase migration, and Cloudflare Worker. It is **not a proven production release yet**: Google Cloud OAuth/Picker values, the Agent Worker URL, the AI provider key, and the Supabase service-role secret must be configured by the project owner. The seeded question bank currently contains 10 questions per course and is reused across lessons; it is not the planned 1,500-question vetted curriculum or 10 × 50-question practice-test bank.
 
-This repo's starting branch was effectively empty (README only). This branch adds backend/Worker scaffolding and a small integration example, **not the complete Axiom lesson frontend**. It is not safe to claim a one-click production deployment until the real frontend is integrated and all steps below pass. Existing Supabase team tables/functions were inspected and preserved; this migration adds lesson results, personal calendar, and shared resources.
+## 1. Export the code
 
-## 1. GitHub
+1. Open the [build/deploy-ready-foundation branch](https://github.com/patelneev11/axiom.ai/tree/build/deploy-ready-foundation).
+2. Download the branch ZIP from GitHub's **Code → Download ZIP**, or use the branch directly.
+3. Keep this branch separate from `main` until the build and security checks pass.
 
-1. Open the `build/deploy-ready-foundation` branch.
-2. Review the diff. Do not merge until secrets, frontend integration, and the security tests are complete.
-3. Download the branch ZIP only if you want the files locally; the branch is the source of truth.
+## 2. Apply the Supabase migration
 
-## 2. Supabase migration
+1. Back up the current database schema and any important data.
+2. Open the Supabase project and go to **SQL Editor**.
+3. Open `supabase/migrations/20261021010000_axiom_backend_foundation.sql` from this repository and review it.
+4. Run it in a staging project first, then the intended project when ready.
+5. Verify the new tables exist: `axiom_lesson_results`, `axiom_user_progress`, `axiom_personal_calendar`, and `axiom_team_resources`.
+6. Confirm RLS is enabled and authenticated users can only select their own lesson results/progress/calendar. Lesson result writes are intentionally restricted to the Worker-only database function.
+7. Keep Supabase Google OAuth provider settings configured with your real frontend callback/redirect URLs.
 
-1. Open the existing project in Supabase.
-2. Back up the current schema/data.
-3. Open SQL Editor and review `supabase/migrations/20261021010000_axiom_backend_foundation.sql`.
-4. Run the migration in a staging project first. It is additive and doesn't drop existing tables.
-5. Confirm the three new tables exist and RLS is enabled.
-6. In Authentication, keep Google OAuth redirect URLs configured for your actual frontend origin.
-7. Do not expose service_role or secret keys in frontend files.
+The migration is additive and does not drop existing Axiom/team tables. It adds a server-only `record_axiom_lesson_result` function; only the Supabase `service_role` may execute it.
 
-The existing project already has `user_app_state`, `levelup_teams`, `levelup_team_members`, and `levelup_team_events` plus team RPCs. Existing team rows include an `invite_code` column; do not query full team rows for ordinary member listings.
+## 3. Configure and deploy the Cloudflare Worker
 
-## 3. Cloudflare Worker
+Requires Node.js LTS and npm.
 
-Requires Node.js and npm on your computer.
+1. Open a terminal in the extracted repository's `worker` folder.
+2. Run `npm install`.
+3. Open `wrangler.toml`. Confirm `SUPABASE_URL` and `SUPABASE_ANON_KEY` match the intended Supabase project. Replace `ALLOWED_ORIGINS` with the exact deployed frontend origin(s), comma-separated, including `https://` and no path.
+4. Run `npx wrangler login`.
+5. Set the AI provider key: `npx wrangler secret put AI_API_KEY`.
+6. Set the Supabase **service-role secret**: `npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY`. Paste it only in the interactive terminal prompt. Never put it in the frontend, Git, or `wrangler.toml`.
+7. Optionally set `AI_BASE_URL` if using a compatible provider other than OpenAI's default endpoint.
+8. Run `npm run check` to type-check the Worker.
+9. Run `npx wrangler dev`. Confirm `GET /health` responds with `{"ok":true}`; unauthenticated calls to `/api/questions`, `/api/grade`, and `/api/agent` must return 401.
+10. Run `npx wrangler deploy` only when checks pass. This deploys the separate Worker named in `wrangler.toml`; do not rename it to the name of your existing frontend Worker.
+11. Copy the deployed Worker origin for the next step.
 
-1. Install Node.js LTS from https://nodejs.org/.
-2. Download the branch ZIP and extract it.
-3. Open a terminal in the extracted repository's `worker` folder.
-4. Run `npm install`.
-5. Edit `wrangler.toml` and replace `SUPABASE_ANON_KEY` with the project's public/publishable key, and replace `ALLOWED_ORIGINS` with the exact deployed frontend origin (scheme + hostname, no trailing path).
-6. Run `npx wrangler login` and complete the Cloudflare authorization.
-7. Set the AI secret: `npx wrangler secret put AI_API_KEY`. Paste the provider key only into the interactive terminal prompt.
-8. If using a non-default provider URL, run `npx wrangler secret put AI_BASE_URL` and enter its documented API base URL.
-9. Run `npx wrangler dev`; test `GET /health` and unauthenticated `POST /api/agent` (must return 401).
-10. Run `npx wrangler deploy` only after tests pass. This creates/updates the Worker named in `wrangler.toml`; do not overwrite the existing frontend Worker by renaming it.
-11. Copy the new Worker URL and configure it in the existing frontend.
+The Worker routes are:
+- `GET /health`: basic health check
+- `GET /api/questions?course=...&unit=1&lesson=1`: authenticated questions without answer keys
+- `POST /api/grade`: authenticated grading; answer keys stay in Worker code and scores are saved through the server-only SQL function
+- `POST /api/agent`: authenticated assistant with official HOSA/DECA host allowlisting and membership-checked team context
 
-## 4. Frontend integration
+## 4. Configure the frontend
 
-Use the existing Axiom frontend repository/source. This branch's `web` directory contains only integration examples, not the full frontend. Configure:
-- Supabase URL + public/publishable key
-- Agent Worker URL
-- Supabase session bearer token on agent requests
-- persistence calls for lesson results, calendar, and user_app_state
-- team UI using existing `create_levelup_team`, `join_levelup_team`, and `rotate_levelup_team_invite` RPCs.
+1. Open `web/src/config.js`.
+2. Confirm the Supabase public/publishable key belongs to the intended project. This key is designed to be used in a browser; it is not a service-role key.
+3. Set `window.AXIOM_AGENT_URL` to the Worker origin from step 3.
+4. To enable Google Drive folder selection, create a Google Cloud OAuth **Web application** client and a referrer-restricted API key. Enable the Google Picker API and the Drive API in that Cloud project. Set:
+   - `AXIOM_GOOGLE_CLIENT_ID`
+   - `AXIOM_GOOGLE_API_KEY`
+   - `AXIOM_GOOGLE_APP_ID` (the Google Cloud project number)
+5. In Google Cloud, authorize the exact frontend origin and configure the OAuth consent screen. The Picker integration requests the `drive.file` scope and lets a user choose a folder. It stores the selected folder URL in the team record; it does not automatically ingest all Drive files or bypass Drive sharing permissions.
+6. Serve the `web/` folder using Cloudflare Pages or another static host. The app entry is `web/index.html`; no frontend build step is required.
+7. Add the deployed frontend origin to Worker `ALLOWED_ORIGINS` and redeploy the Worker if you change it.
 
-Never send a service-role key to the browser. Do not expose team invite codes by selecting every column from `levelup_teams`.
+## 5. Verify the app
 
-## 5. Smoke tests before production
+Use two separate test accounts and a test team, not real student data.
 
-- Two test accounts cannot read each other's `user_app_state`, lesson results, or personal calendar.
-- Each account can save and reload its own lesson result/calendar event.
-- Team owner can create a team and rotate its invite; member can join with a valid code.
-- Invalid/revoked codes fail; non-members cannot read team events/resources.
-- Worker health endpoint works.
-- Agent request without a valid Supabase token returns 401.
-- Valid user can ask a question; response is based only on supplied personal context and approved source excerpts.
-- Arbitrary domains, redirects, non-HTTPS URLs, and unapproved domains are rejected.
-- Agent cannot yet use team context; it explicitly returns 501 for `teamId` requests until membership-scoped Worker integration is implemented.
-- No secret appears in Git, built frontend assets, or browser network responses.
+- Sign up, confirm email, sign in, sign out, and test Google sign-in.
+- Confirm lesson questions load from the Worker and answer keys are not included in the question response.
+- Complete a lesson and verify the Worker calculates the score, saves it, and updates XP/hearts. Retaking the same lesson must not award XP twice.
+- Confirm a user cannot insert/update lesson results or progression directly through the browser's Supabase client.
+- Confirm each account cannot read the other account's lesson results, progression, or personal calendar.
+- Create a team, join with an invite code, rotate the invite as owner, and confirm non-members cannot read events/resources or use team context in the agent.
+- Choose a Drive folder and save its link. Test that a teammate who has not been granted access by Google cannot open private Drive content.
+- Test agent calls with no token, an expired token, a nonmember team ID, an unapproved domain, a redirecting source URL, and an allowed official HOSA/DECA page.
+- Review the latest GitHub Actions run at [Axiom checks](https://github.com/patelneev11/axiom.ai/actions).
 
-## Known follow-up required
+## Current scope limits — do not mistake these for completed features
 
-- Integrate the real Axiom frontend; this repo branch does not include it.
-- Add server-side membership-checked team context to the agent before enabling team-aware agent queries.
-- Google Drive OAuth/refresh-token storage and folder-scoped file operations are not implemented in this foundation.
-- Source extraction is basic HTML text stripping, not a full RAG ingestion/indexing system. Only use URLs from the explicit allowlist and verify citations.
-- Add rate limiting/abuse controls (Cloudflare rate-limiting rules or equivalent) before public production use.
-- Run TypeScript/build tests locally and review deployment logs; tool access here cannot prove the external build environment passes.
+- The question bank is a starter set of 10 questions per course reused across the lesson path. The planned 50 lessons × 10 unique questions per course and 10 practice tests × 50 unique questions per course have not yet been authored/reviewed.
+- Practice-test mode currently uses a 10-question sample set, not a complete 50-question, 60-minute test engine.
+- The Drive integration is a Google Picker folder selector/link, not full Drive file search, ingestion, or sync.
+- Source retrieval is limited to explicitly supplied HTTPS URLs on the official host allowlist and simple HTML text extraction. This is not a complete indexed RAG corpus of every official HOSA/DECA page.
+- The lesson grade and progression RPC are server-side, but production deployment still needs integration tests against the actual configured Supabase project and Worker secrets.
+- Add Cloudflare rate limiting and monitor Worker logs before exposing the agent publicly.
