@@ -25,7 +25,7 @@ export const quizBank = {
  ],
  "deca-ftdm":[
   {q:"A salesperson asks, 'What matters most to you when choosing this product?' This is primarily:",a:["An open-ended needs-discovery question","A closing technique","A price objection","A complaint response"],correct:0,why:"Open-ended discovery questions reveal customer needs before recommending a solution."},
-  {q:"A product costs $40 and sells for $60. What is the gross margin as a percentage of selling price?",a:["20%","33.3%","40%","50%"],correct:2,why:"Gross margin = (60 − 40) / 60 = 33.3%. Note: markup on cost is 50%."},
+  {q:"A product costs $40 and sells for $60. What is the gross margin as a percentage of selling price?",a:["20%","33.3%","40%","50%"],correct:1,why:"Gross margin = (60 − 40) / 60 = 33.3%. Note: markup on cost is 50%."},
   {q:"A customer says the price is too high. What is the best initial response?",a:["Immediately offer the biggest discount","Ask what value or budget concern is driving the objection","End the conversation","Criticize a competitor"],correct:1,why:"Clarifying the underlying objection helps the salesperson respond to the actual concern."},
   {q:"Which metric most directly measures the percentage of leads that become customers?",a:["Conversion rate","Inventory turnover","Net promoter score","Gross margin"],correct:0,why:"Conversion rate measures the share of prospects who complete the target action."},
   {q:"A retailer has high sales but frequent stockouts. Which issue should be investigated first?",a:["Inventory forecasting and replenishment","The logo color alone","Employee dress code only","The mission statement font"],correct:0,why:"Stockout patterns often point to demand forecasting, reorder points, lead times, or supplier reliability."},
