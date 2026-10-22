@@ -69,13 +69,21 @@ function lessonQuestions(course:string,unit:number,lesson:number) {
     return {q:q.q, options:options.map(o=>o.text), correctIndex:options.findIndex(o=>o.originalIndex===q.correct), explanation:q.why};
   });
 }
-async function handleQuestions(request:Request,env:Env) {
+async function handleQuestions(request:Request,env:Env,user:User) {
   if(request.method!=="GET") return json({error:"Method not allowed."},405);
+  if(!env.SUPABASE_SERVICE_ROLE_KEY) return json({error:"Worker is missing the server-side Supabase service key."},503);
   const url=new URL(request.url),course=url.searchParams.get("course")||"",unit=Number(url.searchParams.get("unit")),lesson=Number(url.searchParams.get("lesson"));
   if(!ALLOWED_COURSES.has(course)) return json({error:"Unknown course."},400);
   const questions=lessonQuestions(course,unit,lesson);
   if(!questions) return json({error:"Invalid unit or lesson."},400);
-  return json({course,unit,lesson,difficulty:lesson<=2?"easy":lesson<=6?"medium":lesson<=9?"hard":"expert",questions:questions.map((q,id)=>({id,q:q.q,a:q.options}))});
+  const progressResponse=await fetch(env.SUPABASE_URL+"/rest/v1/rpc/get_axiom_user_progress",{
+    method:"POST",headers:{apikey:env.SUPABASE_SERVICE_ROLE_KEY,Authorization:"Bearer "+env.SUPABASE_SERVICE_ROLE_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({p_user_id:user.id})
+  });
+  if(!progressResponse.ok)return json({error:"Could not verify your hearts."},502);
+  const progress=await progressResponse.json() as {hearts?:number;xp?:number};
+  if((progress.hearts??0)<=0)return json({error:"You are out of hearts. They regenerate after 24 hours."},429);
+  return json({course,unit,lesson,difficulty:lesson<=2?"easy":lesson<=6?"medium":lesson<=9?"hard":"expert",progress,questions:questions.map((q,id)=>({id,q:q.q,a:q.options}))});
 }
 async function handleGrade(request:Request,env:Env,user:User) {
   if(request.method!=="POST") return json({error:"Method not allowed."},405);
@@ -175,7 +183,7 @@ export default {
     if (!user) return json({error:"Authentication required."},401,cors);
     try {
       let r:Response;
-      if(url.pathname==="/api/questions") r=await handleQuestions(request,env);
+      if(url.pathname==="/api/questions") r=await handleQuestions(request,env,user);
       else if(url.pathname==="/api/grade") r=await handleGrade(request,env,user);
       else {
         if(!env.AI_API_KEY) return json({error:"Agent API key is not configured."},503,cors);
