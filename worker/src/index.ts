@@ -95,6 +95,13 @@ async function handleGrade(request:Request,env:Env,user:User) {
   if(!ALLOWED_COURSES.has(course))return json({error:"Unknown course."},400);
   const questions=lessonQuestions(course,unit,lesson);
   if(!questions)return json({error:"Invalid unit or lesson."},400);
+  const progressCheck=await fetch(env.SUPABASE_URL+"/rest/v1/rpc/get_axiom_user_progress",{
+    method:"POST",headers:{apikey:env.SUPABASE_SERVICE_ROLE_KEY,Authorization:"Bearer "+env.SUPABASE_SERVICE_ROLE_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({p_user_id:user.id})
+  });
+  if(!progressCheck.ok)return json({error:"Could not verify your hearts."},502);
+  const currentProgress=await progressCheck.json() as {hearts?:number};
+  if((currentProgress.hearts??0)<=0)return json({error:"You are out of hearts. They regenerate after 24 hours."},429);
   if(!Array.isArray(body.answers)||body.answers.length!==questions.length||!body.answers.every(x=>Number.isInteger(x)&&x>=0&&x<4))return json({error:"Submit one answer choice for each question."},400);
   const answers=body.answers as number[];
   const correct=questions.reduce((sum,q,i)=>sum+(answers[i]===q.correctIndex?1:0),0);
