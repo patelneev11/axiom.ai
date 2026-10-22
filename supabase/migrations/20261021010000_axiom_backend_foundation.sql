@@ -143,12 +143,7 @@ begin
     p_user_id, p_course_slug, p_unit_number, p_lesson_number, p_difficulty,
     p_correct_answers, p_total_questions, p_duration_seconds, v_award, now()
   )
-  on conflict (user_id, course_slug, unit_number, lesson_number)
-  do update set difficulty = excluded.difficulty,
-    correct_answers = excluded.correct_answers,
-    total_questions = excluded.total_questions,
-    duration_seconds = excluded.duration_seconds,
-    completed_at = now();
+  on conflict (user_id, course_slug, unit_number, lesson_number) do nothing;
 
   insert into public.axiom_user_progress(user_id, xp, hearts, heart_updated_at, updated_at)
   values (p_user_id, 0, 5, now(), now())
