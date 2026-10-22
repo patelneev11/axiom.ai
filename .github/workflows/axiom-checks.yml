@@ -1,0 +1,25 @@
+name: Axiom checks
+on:
+  push:
+    branches: [main, "build/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check frontend JavaScript syntax
+        run: node --check web/src/main.js
+      - name: Check Worker TypeScript
+        working-directory: worker
+        run: |
+          npm install --no-audit --no-fund
+          npm run check
+      - name: Run repository smoke checks
+        run: node tests/smoke.mjs
