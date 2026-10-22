@@ -106,7 +106,8 @@ async function handleGrade(request:Request,env:Env,user:User) {
     body:JSON.stringify({p_user_id:user.id,p_course_slug:course,p_unit_number:unit,p_lesson_number:lesson,p_difficulty:difficulty,p_correct_answers:correct,p_total_questions:questions.length,p_duration_seconds:duration})
   });
   if(!response.ok)return json({error:"Could not securely save the graded result."},502);
-  const progress=await response.json();
+  const progress=await response.json() as {first_completion?:boolean;xp_awarded?:number;xp_total?:number;hearts?:number;perfect?:boolean};
+  if(!progress.first_completion) return json({alreadyCompleted:true,message:"This lesson has already been scored. Replays do not overwrite your saved result or award XP again.",progress});
   return json({correct,total:questions.length,accuracy:Math.round(correct/questions.length*100),review:questions.map((q,i)=>({question:q.q,selectedIndex:answers[i],correctIndex:q.correctIndex,correct:answers[i]===q.correctIndex,explanation:q.explanation})),progress});
 }
 
