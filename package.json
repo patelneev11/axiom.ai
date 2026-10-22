@@ -1,0 +1,10 @@
+{
+  "name": "axiom-study-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:web": "node --check web/src/main.js",
+    "test": "node tests/smoke.mjs"
+  }
+}
