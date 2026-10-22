@@ -1,0 +1,11 @@
+name = "axiom-agent-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-21"
+
+[vars]
+SUPABASE_URL = "https://isjqrodbqmazcdczjwxm.supabase.co"
+SUPABASE_ANON_KEY = "REPLACE_WITH_SUPABASE_PUBLISHABLE_OR_ANON_KEY"
+ALLOWED_ORIGINS = "https://REPLACE_WITH_YOUR_AXIOM_FRONTEND_HOST"
+AI_MODEL = "gpt-4o-mini"
+# Set AI_API_KEY with: npx wrangler secret put AI_API_KEY
+# Optional: npx wrangler secret put AI_BASE_URL
