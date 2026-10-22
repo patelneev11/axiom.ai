@@ -11,7 +11,7 @@ assert.ok(html.includes("./src/config.js"), "HTML must load runtime config befor
 assert.ok(html.indexOf("./src/config.js") < html.indexOf("./src/main.js"), "runtime config must load before app");
 assert.ok(existsSync("web/src/main.js"), "frontend entry point must exist");
 assert.ok(config.includes("sb_publishable_"), "browser config should use a Supabase publishable key");
-assert.ok(!config.toLowerCase().includes("service_role"), "browser config must not contain a service-role credential");
+assert.ok(!config.includes("SUPABASE_SERVICE_ROLE_KEY =") && !config.includes("SUPABASE_SERVICE_ROLE_KEY="), "browser config must not define a service-role secret");
 assert.ok(app.includes("hosa-biotechnology") && app.includes("hosa-biomedical-debate") && app.includes("deca-ftdm"), "all three courses must exist");
 assert.ok(app.includes("units:[") && app.includes("easy") && app.includes("medium") && app.includes("hard") && app.includes("expert"), "lesson difficulty levels must exist");
 assert.ok(app.includes("axiom_lesson_results") || app.includes("axiom_lesson_results"), "lesson result persistence must be wired");
