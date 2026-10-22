@@ -107,7 +107,7 @@ create or replace function public.record_axiom_lesson_result(
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_existing boolean;
   v_xp integer;
@@ -174,7 +174,7 @@ begin
 
   return jsonb_build_object('xp_awarded', v_award, 'xp_total', v_xp, 'hearts', v_hearts, 'perfect', v_perfect, 'first_completion', not v_existing);
 end;
-$;
+$$;
 
 revoke all on function public.record_axiom_lesson_result(uuid,text,integer,integer,text,integer,integer,integer) from public, anon, authenticated;
 grant execute on function public.record_axiom_lesson_result(uuid,text,integer,integer,text,integer,integer,integer) to service_role;
@@ -185,7 +185,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_row public.axiom_user_progress%rowtype;
 begin
@@ -202,7 +202,7 @@ begin
   end if;
   return jsonb_build_object('xp',v_row.xp,'hearts',v_row.hearts,'heart_updated_at',v_row.heart_updated_at,'updated_at',v_row.updated_at);
 end;
-$;
+$$;
 revoke all on function public.get_axiom_user_progress(uuid) from public, anon, authenticated;
 grant execute on function public.get_axiom_user_progress(uuid) to service_role;
 
