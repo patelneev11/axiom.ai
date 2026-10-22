@@ -5,9 +5,9 @@ const SUPABASE_KEY = window.AXIOM_SUPABASE_ANON_KEY || "";
 const AGENT_URL = window.AXIOM_AGENT_URL || "";
 const supabase = SUPABASE_KEY && !SUPABASE_KEY.startsWith("REPLACE_") ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 const courses = [
- {id:"hosa-biotechnology",name:"HOSA Biotechnology",short:"Biotechnology",icon:"⌬",units:["Lab Safety & Research","Cell Biology","Molecular Biology","Genetics","Biotechnology Methods","Bioinformatics","Immunology","Microbiology","Ethics & Regulation","Applied Case Studies"]},
- {id:"hosa-biomedical-debate",name:"HOSA Biomedical Debate",short:"Biomedical Debate",icon:"⚖",units:["Debate Foundations","Evidence Evaluation","Research Ethics","Genetics & Genomics","Public Health","Medical Technology","Health Policy","Clinical Ethics","Argument & Rebuttal","Case Preparation"]},
- {id:"deca-ftdm",name:"DECA FTDM",short:"FTDM",icon:"◈",units:["Marketing Foundations","Customer Relations","Selling Process","Product & Service","Promotion","Pricing","Distribution","Market Research","Business Operations","Role-Play Practice"]}
+ {id:"hosa-biotechnology",name:"HOSA Biotechnology",short:"Biotechnology",icon:"⌬",units:["Lab Foundations & Experimental Design","Cellular and Molecular Biology","Genetics and Genomic Analysis","Biotechnology Methods & Bioinformatics","Ethics, Regulation & Applied Cases"]},
+ {id:"hosa-biomedical-debate",name:"HOSA Biomedical Debate",short:"Biomedical Debate",icon:"⚖",units:["Debate Foundations & Evidence","Research Design and Ethics","Genetics, Genomics & Public Health","Medical Technology and Health Policy","Argumentation, Rebuttal & Case Preparation"]},
+ {id:"deca-ftdm",name:"DECA FTDM",short:"FTDM",icon:"◈",units:["Marketing Foundations & Customer Relations","Selling Process and Product Knowledge","Promotion, Pricing & Distribution","Market Research and Business Operations","Role-Play Strategy & Applied Cases"]}
 ];
 const lessonTitles = {
  "hosa-biotechnology":["Lab conduct","Risk assessment","PPE and containment","Experimental design","Controls and variables","Scientific measurement","Data recording","Quality assurance","Research integrity","Lab scenario"],
