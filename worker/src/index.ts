@@ -1,6 +1,8 @@
+import { quizBank } from "./question-bank";
 interface Env {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
   ALLOWED_ORIGINS: string;
   AI_API_KEY: string;
   AI_BASE_URL?: string;
@@ -56,6 +58,50 @@ async function fetchApprovedSource(value: string): Promise<{url:string; text:str
   const text = raw.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim().slice(0, 14_000);
   return { url: u.toString(), text };
 }
+
+type BankQuestion = {q:string;a:readonly string[];correct:number;why:string};
+function lessonQuestions(course:string,unit:number,lesson:number) {
+  const bank = (quizBank as unknown as Record<string, BankQuestion[]>)[course];
+  if (!bank || !Number.isInteger(unit) || unit < 1 || unit > 5 || !Number.isInteger(lesson) || lesson < 1 || lesson > 10) return null;
+  return bank.map((q,qi) => {
+    const options = q.a.map((text,originalIndex)=>({text,originalIndex}))
+      .sort((a,b)=>(((unit*31+lesson*17+qi*13+a.originalIndex*7)%97)-((unit*31+lesson*17+qi*13+b.originalIndex*7)%97)) || a.originalIndex-b.originalIndex);
+    return {q:q.q, options:options.map(o=>o.text), correctIndex:options.findIndex(o=>o.originalIndex===q.correct), explanation:q.why};
+  });
+}
+async function handleQuestions(request:Request,env:Env) {
+  if(request.method!=="GET") return json({error:"Method not allowed."},405);
+  const url=new URL(request.url),course=url.searchParams.get("course")||"",unit=Number(url.searchParams.get("unit")),lesson=Number(url.searchParams.get("lesson"));
+  if(!ALLOWED_COURSES.has(course)) return json({error:"Unknown course."},400);
+  const questions=lessonQuestions(course,unit,lesson);
+  if(!questions) return json({error:"Invalid unit or lesson."},400);
+  return json({course,unit,lesson,difficulty:lesson<=2?"easy":lesson<=6?"medium":lesson<=9?"hard":"expert",questions:questions.map((q,id)=>({id,q:q.q,a:q.options}))});
+}
+async function handleGrade(request:Request,env:Env,user:User) {
+  if(request.method!=="POST") return json({error:"Method not allowed."},405);
+  if(!env.SUPABASE_SERVICE_ROLE_KEY) return json({error:"Worker is missing the server-side Supabase service key."},503);
+  let body:{course?:unknown;unit?:unknown;lesson?:unknown;answers?:unknown;durationSeconds?:unknown};
+  try{body=await request.json()}catch{return json({error:"Invalid JSON."},400)}
+  const course=typeof body.course==="string"?body.course:"";
+  const unit=Number(body.unit),lesson=Number(body.lesson);
+  if(!ALLOWED_COURSES.has(course))return json({error:"Unknown course."},400);
+  const questions=lessonQuestions(course,unit,lesson);
+  if(!questions)return json({error:"Invalid unit or lesson."},400);
+  if(!Array.isArray(body.answers)||body.answers.length!==questions.length||!body.answers.every(x=>Number.isInteger(x)&&x>=0&&x<4))return json({error:"Submit one answer choice for each question."},400);
+  const answers=body.answers as number[];
+  const correct=questions.reduce((sum,q,i)=>sum+(answers[i]===q.correctIndex?1:0),0);
+  const difficulty=lesson<=2?"easy":lesson<=6?"medium":lesson<=9?"hard":"expert";
+  const duration=Math.max(0,Math.min(86400,Math.floor(Number(body.durationSeconds)||0)));
+  const response=await fetch(env.SUPABASE_URL+"/rest/v1/rpc/record_axiom_lesson_result",{
+    method:"POST",
+    headers:{apikey:env.SUPABASE_SERVICE_ROLE_KEY,Authorization:"Bearer "+env.SUPABASE_SERVICE_ROLE_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({p_user_id:user.id,p_course_slug:course,p_unit_number:unit,p_lesson_number:lesson,p_difficulty:difficulty,p_correct_answers:correct,p_total_questions:questions.length,p_duration_seconds:duration})
+  });
+  if(!response.ok)return json({error:"Could not securely save the graded result."},502);
+  const progress=await response.json();
+  return json({correct,total:questions.length,accuracy:Math.round(correct/questions.length*100),review:questions.map((q,i)=>({question:q.q,selectedIndex:answers[i],correctIndex:q.correctIndex,correct:answers[i]===q.correctIndex,explanation:q.explanation})),progress});
+}
+
 async function agent(request: Request, env: Env, user: User) {
   const raw = await request.text();
   if (raw.length > MAX_BODY) return json({ error: "Request too large." }, 413);
