@@ -163,8 +163,14 @@ begin
   end if;
 
   v_xp := v_xp + v_award;
-  if not v_existing and v_perfect then
-    v_hearts := least(5, v_hearts + 1);
+  if not v_existing then
+    v_hearts := greatest(0, v_hearts - (p_total_questions - p_correct_answers));
+    if v_perfect then
+      v_hearts := least(5, v_hearts + 1);
+    end if;
+    if p_correct_answers < p_total_questions or v_perfect then
+      v_heart_updated_at := now();
+    end if;
   end if;
 
   update public.axiom_user_progress
@@ -177,5 +183,32 @@ $;
 
 revoke all on function public.record_axiom_lesson_result(uuid,text,integer,integer,text,integer,integer,integer) from public, anon, authenticated;
 grant execute on function public.record_axiom_lesson_result(uuid,text,integer,integer,text,integer,integer,integer) to service_role;
+
+
+create or replace function public.get_axiom_user_progress(p_user_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_row public.axiom_user_progress%rowtype;
+begin
+  if p_user_id is null then
+    raise exception 'Invalid user';
+  end if;
+  insert into public.axiom_user_progress(user_id,xp,hearts,heart_updated_at,updated_at)
+  values(p_user_id,0,5,now(),now())
+  on conflict(user_id) do nothing;
+  select * into v_row from public.axiom_user_progress where user_id=p_user_id for update;
+  if now()-v_row.heart_updated_at >= interval '24 hours' and v_row.hearts < 5 then
+    update public.axiom_user_progress set hearts=5,heart_updated_at=now(),updated_at=now()
+      where user_id=p_user_id returning * into v_row;
+  end if;
+  return jsonb_build_object('xp',v_row.xp,'hearts',v_row.hearts,'heart_updated_at',v_row.heart_updated_at,'updated_at',v_row.updated_at);
+end;
+$;
+revoke all on function public.get_axiom_user_progress(uuid) from public, anon, authenticated;
+grant execute on function public.get_axiom_user_progress(uuid) to service_role;
 
 commit;
