@@ -32,13 +32,22 @@ async function getUser(request: Request, env: Env): Promise<User | null> {
   return u?.id ? u : null;
 }
 async function readOwnState(env: Env, bearer: string, userId: string) {
-  const url = new URL(env.SUPABASE_URL + "/rest/v1/user_app_state");
-  url.searchParams.set("user_id", "eq." + userId);
-  url.searchParams.set("select", "state,updated_at");
-  const r = await fetch(url, { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: bearer } });
-  if (!r.ok) throw new Error("Could not load your Axiom context.");
-  const rows = await r.json() as Array<{state: unknown; updated_at: string}>;
-  return rows[0] || null;
+  // Use the signed-in user's bearer token so Supabase RLS remains in force.
+  const headers = { apikey: env.SUPABASE_ANON_KEY, Authorization: bearer };
+  async function rows<T>(table: string, params: Record<string,string>): Promise<T[]> {
+    const url = new URL(env.SUPABASE_URL + "/rest/v1/" + table);
+    for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+    const response = await fetch(url, { headers });
+    if (!response.ok) throw new Error("Could not load authorized Axiom context.");
+    return await response.json() as T[];
+  }
+  const [appState, progress, results, calendar] = await Promise.all([
+    rows<{state:unknown;updated_at:string}>("user_app_state",{user_id:"eq."+userId,select:"state,updated_at",limit:"1"}),
+    rows<{xp:number;hearts:number;updated_at:string}>("axiom_user_progress",{user_id:"eq."+userId,select:"xp,hearts,updated_at",limit:"1"}),
+    rows<{course_slug:string;unit_number:number;lesson_number:number;difficulty:string;correct_answers:number;total_questions:number;xp_earned:number;completed_at:string}>("axiom_lesson_results",{select:"course_slug,unit_number,lesson_number,difficulty,correct_answers,total_questions,xp_earned,completed_at",order:"completed_at.desc",limit:"50"}),
+    rows<{title:string;starts_at:string;course_slug:string|null;details:string|null}>("axiom_personal_calendar",{select:"title,starts_at,course_slug,details",order:"starts_at.asc",limit:"50"})
+  ]);
+  return { userId, appState: appState[0] || null, progress: progress[0] || null, recentLessonResults: results, upcomingCalendar: calendar };
 }
 function validateSourceUrl(value: string): URL | null {
   try {
