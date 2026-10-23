@@ -107,9 +107,19 @@
       "validated_count": 0,
       "published_count": 0,
       "status": "draft"
+    },
+    {
+      "event_code": "MS",
+      "event_name": "Medical Spelling",
+      "path": "content/question-bank/hosa/medical-spelling.jsonl",
+      "drafted_count": 11,
+      "reviewed_count": 0,
+      "validated_count": 0,
+      "published_count": 0,
+      "status": "draft"
     }
   ],
-  "current_drafted_total": 142,
+  "current_drafted_total": 153,
   "quality_gate": [
     "500 distinct items per event",
     "Original practice content; no copied proprietary competition questions",
