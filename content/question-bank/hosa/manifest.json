@@ -1,0 +1,42 @@
+{
+  "project": "Axiom HOSA question bank",
+  "scope_basis": {
+    "season": "2026-2027",
+    "official_guidelines": "https://hosa.org/guidelines/",
+    "official_preparation_resources": "https://hosa.org/ceusefultools/",
+    "notes": "Event inventory must be reconciled against the current official guidelines. Keep secondary events, postsecondary/collegiate events, middle-school-only events, recognition events, and NGL/Cengage testing events explicitly distinguished."
+  },
+  "target_per_event": 500,
+  "event_banks": [
+    {
+      "event_code": "BT",
+      "event_name": "Biotechnology",
+      "path": "content/question-bank/hosa/biotechnology.jsonl",
+      "drafted_count": 25,
+      "reviewed_count": 0,
+      "validated_count": 0,
+      "published_count": 0,
+      "status": "draft"
+    },
+    {
+      "event_code": "BD",
+      "event_name": "Biomedical Debate",
+      "path": "content/question-bank/hosa/biomedical-debate.jsonl",
+      "drafted_count": 20,
+      "reviewed_count": 0,
+      "validated_count": 0,
+      "published_count": 0,
+      "status": "draft"
+    }
+  ],
+  "quality_gate": [
+    "500 distinct items per event",
+    "Original practice content; no copied proprietary competition questions",
+    "Event-specific scope and topic tags",
+    "Answer key and explanation or scoring rubric",
+    "Source references checked against current event guidance",
+    "Duplicate and near-duplicate checks",
+    "Schema and answer-key validation",
+    "Reviewed and validated counts tracked separately from drafted"
+  ]
+}
