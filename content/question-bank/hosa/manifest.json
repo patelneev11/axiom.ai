@@ -67,9 +67,29 @@
       "validated_count": 0,
       "published_count": 0,
       "status": "draft"
+    },
+    {
+      "event_code": "BH",
+      "event_name": "Behavioral Health",
+      "path": "content/question-bank/hosa/behavioral-health.jsonl",
+      "drafted_count": 11,
+      "reviewed_count": 0,
+      "validated_count": 0,
+      "published_count": 0,
+      "status": "draft"
+    },
+    {
+      "event_code": "WHD",
+      "event_name": "World Health & Disparities",
+      "path": "content/question-bank/hosa/world-health-disparities.jsonl",
+      "drafted_count": 11,
+      "reviewed_count": 0,
+      "validated_count": 0,
+      "published_count": 0,
+      "status": "draft"
     }
   ],
-  "current_drafted_total": 98,
+  "current_drafted_total": 120,
   "quality_gate": [
     "500 distinct items per event",
     "Original practice content; no copied proprietary competition questions",
