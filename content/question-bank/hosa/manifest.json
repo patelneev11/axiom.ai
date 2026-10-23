@@ -8,27 +8,11 @@
   },
   "target_per_event": 500,
   "event_banks": [
-    {
-      "event_code": "BT",
-      "event_name": "Biotechnology",
-      "path": "content/question-bank/hosa/biotechnology.jsonl",
-      "drafted_count": 25,
-      "reviewed_count": 0,
-      "validated_count": 0,
-      "published_count": 0,
-      "status": "draft"
-    },
-    {
-      "event_code": "BD",
-      "event_name": "Biomedical Debate",
-      "path": "content/question-bank/hosa/biomedical-debate.jsonl",
-      "drafted_count": 20,
-      "reviewed_count": 0,
-      "validated_count": 0,
-      "published_count": 0,
-      "status": "draft"
-    }
+    {"event_code":"BT","event_name":"Biotechnology","path":"content/question-bank/hosa/biotechnology.jsonl","drafted_count":25,"reviewed_count":0,"validated_count":0,"published_count":0,"status":"draft"},
+    {"event_code":"BD","event_name":"Biomedical Debate","path":"content/question-bank/hosa/biomedical-debate.jsonl","drafted_count":20,"reviewed_count":0,"validated_count":0,"published_count":0,"status":"draft"},
+    {"event_code":"MT","event_name":"Medical Terminology","path":"content/question-bank/hosa/medical-terminology.jsonl","drafted_count":20,"reviewed_count":0,"validated_count":0,"published_count":0,"status":"draft"}
   ],
+  "current_drafted_total": 65,
   "quality_gate": [
     "500 distinct items per event",
     "Original practice content; no copied proprietary competition questions",
